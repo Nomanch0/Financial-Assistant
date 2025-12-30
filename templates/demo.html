@@ -1,1 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Agentic Financial Behaviour Chatbot</title>
 
+    <!-- ✅ NEW: Chart.js for visualizations -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+    <style>
+        :root {
+            --bg: linear-gradient(135deg, #e3f2fd, #fce4ec);
+            --card-bg: #ffffffee;
+            --text-main: #222;
+            --border-subtle: #e0e0e0;
+            --user-bubble: #e3f2fd;
+            --bot-bubble: #e8f5e9;
+            --button-bg: #1a73e8;
+            --button-bg-hover: #0f5fcc;
+            --chat-bg: #ffffff;
+        }
+
+        body.dark-mode {
+            --bg: radial-gradient(circle at top, #111827, #020617);
+            --card-bg: #020617f2;
+            --text-main: #e5e7eb;
+            --border-subtle: #1f2937;
+            --user-bubble: #1e3a8a;
+            --bot-bubble: #064e3b;
+            --button-bg: #0f172a;
+            --button-bg-hover: #020617;
+            --chat-bg: #020617;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            margin: 0;
+            padding: 30px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            color: var(--text-main);
+            transition: background 0.4s ease, color 0.3s ease;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 960px;
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 24px 32px 28px;
+            box-shadow: 0 18px 45px rgba(15, 23, 42, 0.28);
+            border: 1px solid rgba(148, 163, 184, 0.25);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            align-items: center;
+            padding-bottom: 14px;
+            border-bottom: 1px solid var(--border-subtle);
+            margin-bottom: 18px;
+        }
+
+        .title-wrap { display: flex; flex-direction: column; gap: 3px; }
+
+        h2 { margin: 0; font-size: 24px; display: flex; align-items: center; gap: 6px; }
+
+        .subtitle { font-size: 12px; opacity: 0.7; }
+
+        .header-actions { display: flex; gap: 8px; align-items: center; }
+
+        button { font-family: inherit; }
+
+        .btn {
+            background: var(--button-bg);
+            color: white;
+            padding: 7px 13px;
+            border: none;
+            border-radius: 999px;
+            cursor: pointer;
+            font-size: 13px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: background 0.2s ease, transform 0.1s ease, box-shadow 0.1s ease;
+            box-shadow: 0 4px 10px rgba(15, 23, 42, 0.3);
+            white-space: nowrap;
+        }
+
+        .btn:hover {
+            background: var(--button-bg-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 14px rgba(15, 23, 42, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 6px rgba(15, 23, 42, 0.25);
+        }
+
+        #theme-toggle { border-radius: 999px; }
+
+        label { font-weight: 600; margin-top: 10px; display: block; font-size: 13px; }
+
+        select, textarea {
+            width: 100%;
+            padding: 11px 12px;
+            border-radius: 10px;
+            border: 1px solid var(--border-subtle);
+            font-size: 14px;
+            outline: none;
+            transition: border 0.2s, box-shadow 0.2s, background 0.2s;
+            background: rgba(248, 250, 252, 0.9);
+            color: var(--text-main);
+            margin-top: 5px;
+        }
+
+        body.dark-mode select,
+        body.dark-mode textarea {
+            background: #020617;
+            border-color: #1f2937;
+        }
+
+        select:focus, textarea:focus {
+            border-color: #1d4ed8;
+            box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.6);
+        }
+
+        textarea { resize: none; }
+
+        /* ✅ NEW: Dashboard layout */
+        .dashboard-title {
+            margin-top: 18px;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .card {
+            background: var(--chat-bg);
+            border: 1px solid var(--border-subtle);
+            border-radius: 14px;
+            padding: 12px;
+            box-shadow: inset 0 0 24px rgba(15, 23, 42, 0.08);
+        }
+
+        .kpi-row {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .kpi {
+            grid-column: span 4;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            padding: 12px;
+        }
+
+        .kpi .label { font-size: 12px; opacity: 0.7; }
+        .kpi .value { font-size: 18px; font-weight: 700; }
+
+        .chart-card {
+            grid-column: span 6;
+        }
+
+        .chart-card.large {
+            grid-column: span 12;
+        }
+
+        canvas { width: 100% !important; height: 280px !important; }
+
+        .chat-title { margin-top: 18px; margin-bottom: 10px; font-size: 16px; }
+
+        .chat-container {
+            border-radius: 14px;
+            padding: 14px 14px 6px;
+            background: var(--chat-bg);
+            max-height: 480px;
+            overflow-y: auto;
+            box-shadow: inset 0 0 24px rgba(15, 23, 42, 0.18);
+            border: 1px solid var(--border-subtle);
+            scroll-behavior: smooth;
+        }
+
+        .chat-inner { display: flex; flex-direction: column; gap: 18px; padding-bottom: 8px; }
+
+        .message {
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+            animation: messageIn 0.3s ease-out;
+        }
+
+        .message.user-message { justify-content: flex-end; }
+        .message.user-message .message-content { align-items: flex-end; }
+        .message.bot-message { justify-content: flex-start; }
+
+        .avatar {
+            width: 34px;
+            height: 34px;
+            border-radius: 999px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+            box-shadow: 0 4px 10px rgba(15, 23, 42, 0.3);
+        }
+
+        .user-avatar {
+            background: radial-gradient(circle at 30% 30%, #93c5fd, #1d4ed8);
+            color: #eff6ff;
+        }
+
+        .bot-avatar {
+            background: radial-gradient(circle at 30% 30%, #6ee7b7, #047857);
+            color: #ecfdf5;
+        }
+
+        .message-content { display: flex; flex-direction: column; max-width: min(80%, 640px); }
+
+        .user, .bot { font-size: 12px; margin-bottom: 4px; opacity: 0.7; }
+        .user { color: #60a5fa; }
+        .bot { color: #34d399; }
+
+        .bubble {
+            padding: 10px 13px;
+            border-radius: 14px;
+            font-size: 14px;
+            line-height: 1.6;
+            display: inline-block;
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.18);
+            position: relative;
+            white-space: pre-wrap;
+            transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.2s ease;
+        }
+
+        .bubble.user-msg { background: var(--user-bubble); border-bottom-right-radius: 4px; }
+        .bubble.bot-msg { background: var(--bot-bubble); border-bottom-left-radius: 4px; }
+
+        .bubble:hover { transform: translateY(-2px); box-shadow: 0 8px 18px rgba(15, 23, 42, 0.26); }
+        .message.user-message .bubble { margin-left: auto; }
+
+        .typing-indicator { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; opacity: 0.7; margin-top: 4px; }
+        .typing-dots { display: inline-flex; gap: 3px; }
+        .typing-dots span {
+            width: 4px; height: 4px; border-radius: 999px; background: #9ca3af;
+            animation: bounce 1s infinite ease-in-out;
+        }
+        .typing-dots span:nth-child(2) { animation-delay: 0.15s; }
+        .typing-dots span:nth-child(3) { animation-delay: 0.3s; }
+
+        @keyframes bounce {
+            0%, 80%, 100% { transform: translateY(0); opacity: 0.6; }
+            40% { transform: translateY(-3px); opacity: 1; }
+        }
+
+        @keyframes messageIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .empty-state { margin: 0; font-size: 14px; opacity: 0.6; }
+
+        @media (max-width: 768px) {
+            body { padding: 12px; }
+            .container { padding: 18px 16px 22px; }
+            .header { flex-direction: column; align-items: flex-start; }
+            .header-actions { align-self: stretch; justify-content: flex-end; }
+            .message-content { max-width: 100%; }
+
+            .kpi { grid-column: span 12; }
+            .chart-card { grid-column: span 12; }
+            canvas { height: 260px !important; }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="title-wrap">
+                <h2>💬 Agentic Financial Behaviour Chatbot</h2>
+                <div class="subtitle">Per-account financial insights, natural language queries, and smart guidance.</div>
+            </div>
+            <div class="header-actions">
+                <button type="button" class="btn" id="theme-toggle">
+                    🌙 Dark Mode
+                </button>
+                <form action="{{ url_for('reset') }}" method="get">
+                    <button type="submit" class="btn">🧹 Clear Chat</button>
+                </form>
+            </div>
+        </div>
+
+        <form method="post" action="{{ url_for('index') }}">
+            <label for="account_id">Select Account ID</label>
+            <select name="account_id" id="account_id">
+                {% for acc in account_ids %}
+                <option value="{{ acc }}" {% if acc == selected_account %}selected{% endif %}>{{ acc }}</option>
+                {% endfor %}
+            </select>
+
+            <label for="message">Ask anything about this account</label>
+            <textarea
+                name="message"
+                id="message"
+                rows="3"
+                placeholder="Question'"
+            ></textarea>
+
+            <br><br>
+            <button type="submit" class="btn">📩 Send</button>
+        </form>
+
+        <!-- ✅ NEW: Dashboard / Insights -->
+        <h3 class="dashboard-title">📊 Account Dashboard</h3>
+
+        <div class="kpi-row">
+            <div class="card kpi">
+                <div class="label">Total Income</div>
+                <div class="value" id="kpi-income">—</div>
+            </div>
+            <div class="card kpi">
+                <div class="label">Total Spending</div>
+                <div class="value" id="kpi-spend">—</div>
+            </div>
+            <div class="card kpi">
+                <div class="label">Avg Monthly Income</div>
+                <div class="value" id="kpi-avg-income">—</div>
+            </div>
+        </div>
+
+        <div class="dashboard-grid">
+            <div class="card chart-card">
+                <div style="font-weight:700; margin-bottom:6px;">Income vs Spending</div>
+                <canvas id="chartIncomeSpend"></canvas>
+            </div>
+
+            <div class="card chart-card">
+                <div style="font-weight:700; margin-bottom:6px;">Top Merchants by Spending</div>
+                <canvas id="chartTopMerchants"></canvas>
+            </div>
+
+            <div class="card chart-card">
+                <div style="font-weight:700; margin-bottom:6px;">Top Categories by Spending</div>
+                <canvas id="chartTopCategories"></canvas>
+            </div>
+
+            <div class="card chart-card">
+                <div style="font-weight:700; margin-bottom:6px;">Monthly Income vs Expense</div>
+                <canvas id="chartMonthly"></canvas>
+            </div>
+        </div>
+
+        <h3 class="chat-title">Chat</h3>
+        <div class="chat-container" id="chat-container">
+            <div class="chat-inner">
+                {% if history %}
+                    {% for pair in history %}
+                        <div class="message user-message">
+                            <div class="message-content">
+                                <div class="user">You</div>
+                                <div class="bubble user-msg">{{ pair[0] }}</div>
+                            </div>
+                            <div class="avatar user-avatar">🧑</div>
+                        </div>
+
+                        <div class="message bot-message">
+                            <div class="avatar bot-avatar">🤖</div>
+                            <div class="message-content">
+                                <div class="bot">Assistant</div>
+                                <div class="bubble bot-msg bot-message-text">
+                                    {{ pair[1] | safe }}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="empty-state">No messages yet. Ask something above 👆</p>
+                {% endif %}
+
+                <div class="message bot-message" id="typing-row" style="display: none;">
+                    <div class="avatar bot-avatar">🤖</div>
+                    <div class="message-content">
+                        <div class="bot">Assistant</div>
+                        <div class="bubble bot-msg">
+                            <div class="typing-indicator">
+                                <span>Thinking</span>
+                                <div class="typing-dots">
+                                    <span></span><span></span><span></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Dark Mode Toggle with localStorage ---
+        const themeToggle = document.getElementById('theme-toggle');
+        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const savedTheme = localStorage.getItem('chat-theme');
+
+        if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+            document.body.classList.add('dark-mode');
+            themeToggle.textContent = '☀️ Light Mode';
+        }
+
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            localStorage.setItem('chat-theme', isDark ? 'dark' : 'light');
+            themeToggle.textContent = isDark ? '☀️ Light Mode' : '🌙 Dark Mode';
+
+            // ✅ update chart text colors after theme change
+            refreshInsights();
+        });
+
+        // --- Auto-scroll chat to bottom ---
+        const chatContainer = document.getElementById('chat-container');
+        if (chatContainer) {
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // --- Fake "typing" indicator on page load for nicer UX ---
+        const typingRow = document.getElementById('typing-row');
+        if (typingRow && document.querySelectorAll('.bot-message-text').length) {
+            typingRow.style.display = 'flex';
+            setTimeout(() => {
+                typingRow.style.display = 'none';
+            }, 1200);
+        }
+
+        // ✅ NEW: switch account WITHOUT losing chat (server keeps per-account history)
+        const accountSelect = document.getElementById('account_id');
+        accountSelect.addEventListener('change', () => {
+            const acc = accountSelect.value;
+            window.location.href = `/?account_id=${encodeURIComponent(acc)}`;
+        });
+
+        // ✅ NEW: Chart.js charts
+        let chartIncomeSpend = null;
+        let chartTopMerchants = null;
+        let chartTopCategories = null;
+        let chartMonthly = null;
+
+        function getTextColor() {
+            return getComputedStyle(document.body).getPropertyValue('--text-main').trim() || '#222';
+        }
+
+        function destroyCharts() {
+            [chartIncomeSpend, chartTopMerchants, chartTopCategories, chartMonthly].forEach(ch => {
+                if (ch) ch.destroy();
+            });
+            chartIncomeSpend = null;
+            chartTopMerchants = null;
+            chartTopCategories = null;
+            chartMonthly = null;
+        }
+
+        function moneyFmt(v, currency) {
+            try {
+                const n = Number(v || 0);
+                return n.toLocaleString(undefined, { maximumFractionDigits: 2 }) + " " + (currency || "");
+            } catch {
+                return String(v) + " " + (currency || "");
+            }
+        }
+
+        async function refreshInsights() {
+            const acc = accountSelect.value;
+            if (!acc) return;
+
+            const res = await fetch(`/api/insights/${encodeURIComponent(acc)}`);
+            const data = await res.json();
+
+            if (!data.ok) {
+                document.getElementById('kpi-income').textContent = "—";
+                document.getElementById('kpi-spend').textContent = "—";
+                document.getElementById('kpi-avg-income').textContent = "—";
+                destroyCharts();
+                return;
+            }
+
+            const currency = data.currency || "SAR";
+
+            document.getElementById('kpi-income').textContent = moneyFmt(data.total_income, currency);
+            document.getElementById('kpi-spend').textContent = moneyFmt(data.total_spend, currency);
+            document.getElementById('kpi-avg-income').textContent = moneyFmt(data.avg_monthly_income, currency);
+
+            const textColor = getTextColor();
+
+            // rebuild charts for correct theme colors
+            destroyCharts();
+
+            // 1) Income vs Spend (doughnut)
+            chartIncomeSpend = new Chart(
+                document.getElementById('chartIncomeSpend'),
+                {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Total Income', 'Total Spending'],
+                        datasets: [{
+                            data: [data.total_income || 0, data.total_spend || 0],
+                        }]
+                    },
+                    options: {
+                        plugins: {
+                            legend: { labels: { color: textColor } }
+                        }
+                    }
+                }
+            );
+
+            // 2) Top Merchants (bar)
+            const merchLabels = (data.top_merchants || []).map(x => x.name);
+            const merchVals = (data.top_merchants || []).map(x => x.value);
+
+            chartTopMerchants = new Chart(
+                document.getElementById('chartTopMerchants'),
+                {
+                    type: 'bar',
+                    data: {
+                        labels: merchLabels,
+                        datasets: [{
+                            label: `Spending (${currency})`,
+                            data: merchVals
+                        }]
+                    },
+                    options: {
+                        plugins: {
+                            legend: { labels: { color: textColor } }
+                        },
+                        scales: {
+                            x: { ticks: { color: textColor } },
+                            y: { ticks: { color: textColor } }
+                        }
+                    }
+                }
+            );
+
+            // 3) Top Categories (bar)
+            const catLabels = (data.top_categories || []).map(x => x.name);
+            const catVals = (data.top_categories || []).map(x => x.value);
+
+            chartTopCategories = new Chart(
+                document.getElementById('chartTopCategories'),
+                {
+                    type: 'bar',
+                    data: {
+                        labels: catLabels,
+                        datasets: [{
+                            label: `Spending (${currency})`,
+                            data: catVals
+                        }]
+                    },
+                    options: {
+                        plugins: {
+                            legend: { labels: { color: textColor } }
+                        },
+                        scales: {
+                            x: { ticks: { color: textColor } },
+                            y: { ticks: { color: textColor } }
+                        }
+                    }
+                }
+            );
+
+            // 4) Monthly income vs expense (line)
+            const months = (data.months || []).map(x => x.month);
+            const incomeSeries = (data.months || []).map(x => x.income || 0);
+            const expenseSeries = (data.months || []).map(x => x.expense || 0);
+
+            chartMonthly = new Chart(
+                document.getElementById('chartMonthly'),
+                {
+                    type: 'line',
+                    data: {
+                        labels: months,
+                        datasets: [
+                            { label: `Income (${currency})`, data: incomeSeries, tension: 0.2 },
+                            { label: `Expense (${currency})`, data: expenseSeries, tension: 0.2 }
+                        ]
+                    },
+                    options: {
+                        plugins: {
+                            legend: { labels: { color: textColor } }
+                        },
+                        scales: {
+                            x: { ticks: { color: textColor } },
+                            y: { ticks: { color: textColor } }
+                        }
+                    }
+                }
+            );
+        }
+
+        // initial load
+        refreshInsights();
+    </script>
+</body>
+</html>
