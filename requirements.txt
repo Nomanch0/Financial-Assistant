@@ -1,0 +1,5 @@
+flask
+faiss-cpu
+sentence-transformers
+huggingface_hub
+numpy
